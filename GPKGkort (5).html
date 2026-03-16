@@ -1,0 +1,1408 @@
+<!DOCTYPE html>
+<html lang="is">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aðalskipulag Eyjafjarðarsveitar – Vinnslutillaga</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<style>
+:root{--bg:#f0f0ed;--surface:#fff;--border:#dddcd8;--border2:#e8e8e4;--accent:#1a6b3c;--accent2:#0f4fa8;--text:#1a1a18;--muted:#888884;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Calibri','Trebuchet MS',sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+header{display:flex;align-items:center;gap:10px;padding:9px 14px;background:linear-gradient(135deg,#ddeaf8 0%,#f4f8fe 60%,#eaf2fb 100%);border-bottom:1px solid #b8d0ea;flex-shrink:0;}
+.logo{font-size:16px;font-weight:800;color:var(--accent);letter-spacing:-.5px;white-space:nowrap;}
+.logo span{color:var(--text);}
+.hdr-btn{background:var(--accent);color:#fff;border:none;padding:6px 13px;border-radius:5px;font-family:'Calibri','Trebuchet MS',sans-serif;font-size:11px;cursor:pointer;white-space:nowrap;}
+.hdr-btn:hover{background:#155930;}.hdr-btn:disabled{background:var(--border);color:var(--muted);cursor:not-allowed;}
+#file-input,#qml-input-global{display:none;}
+.file-name{font-family:'Calibri','Trebuchet MS',sans-serif;font-size:11px;color:var(--muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.main{display:flex;flex:1;overflow:hidden;}
+#sidebar{width:285px;background:#fafaf8;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;}
+.sb-section{padding:9px 12px 6px;border-bottom:1px solid var(--border2);font-size:11px;font-family:'Calibri','Trebuchet MS',sans-serif;color:var(--muted);letter-spacing:1.8px;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center;}
+#layer-count{background:var(--border);color:var(--text);padding:1px 7px;border-radius:10px;font-size:11px;}
+#layer-list{flex:1;overflow-y:auto;padding:5px;}
+#layer-list::-webkit-scrollbar{width:3px;}#layer-list::-webkit-scrollbar-thumb{background:var(--border);}
+/* Layer card */
+.layer-item{border-radius:7px;border:1px solid transparent;margin-bottom:5px;overflow:hidden;background:white;}
+.layer-item.active{border-color:rgba(26,107,60,.18);}
+.layer-row{display:flex;align-items:center;gap:8px;padding:8px 10px;cursor:pointer;}
+.layer-row:hover{background:rgba(0,0,0,.02);}
+.layer-swatch{width:14px;height:14px;border-radius:3px;flex-shrink:0;border:1.5px solid rgba(0,0,0,.12);}
+.layer-info{flex:1;overflow:hidden;}
+.layer-name{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:'Calibri','Trebuchet MS',sans-serif;}
+.layer-meta{font-family:'Calibri','Trebuchet MS',sans-serif;font-size:11px;color:var(--muted);margin-top:1px;}
+.layer-toggle{width:26px;height:15px;background:var(--border);border-radius:8px;position:relative;cursor:pointer;transition:background .2s;flex-shrink:0;border:none;}
+.layer-toggle.on{background:var(--accent);}
+.layer-toggle::after{content:'';position:absolute;width:11px;height:11px;background:white;border-radius:50%;top:2px;left:2px;transition:transform .2s;box-shadow:0 1px 2px rgba(0,0,0,.2);}
+.layer-toggle.on::after{transform:translateX(11px);}
+/* Controls row */
+.ctrl-row{display:flex;align-items:center;gap:5px;padding:0 9px 8px;flex-wrap:wrap;border-top:1px solid var(--border2);}
+.ctrl-row-inner{display:flex;align-items:center;gap:5px;width:100%;padding:6px 0 0;}
+.ctrl-lbl{font-family:'Calibri','Trebuchet MS',sans-serif;font-size:11px;color:var(--muted);white-space:nowrap;}
+.ctrl-btn{font-family:'Calibri','Trebuchet MS',sans-serif;font-size:11px;padding:3px 8px;border-radius:4px;border:1px solid var(--border);background:transparent;cursor:pointer;color:var(--muted);transition:all .12s;}
+.ctrl-btn:hover{border-color:var(--accent);color:var(--accent);}
+.ctrl-btn.on{background:rgba(26,107,60,.08);border-color:rgba(26,107,60,.3);color:var(--accent);}
+.ctrl-tag{font-family:'Calibri','Trebuchet MS',sans-serif;font-size:11px;color:var(--muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ctrl-clear{font-family:'Calibri','Trebuchet MS',sans-serif;font-size:11px;padding:3px 6px;border-radius:4px;border:1px solid var(--border);background:transparent;cursor:pointer;color:#cc4444;margin-left:auto;}
+/* Label field select */
+.label-select{font-family:'Calibri','Trebuchet MS',sans-serif;font-size:11px;padding:2px 4px;border-radius:4px;border:1px solid var(--border);background:white;color:var(--text);flex:1;min-width:0;}
+.label-fields{display:flex;flex-direction:column;gap:3px;padding:4px 0 2px;width:100%;}
+.lbl-check{display:flex;align-items:center;gap:5px;font-family:'Calibri','Trebuchet MS',sans-serif;font-size:11px;color:var(--text);cursor:pointer;padding:1px 0;}
+.lbl-check input{cursor:pointer;accent-color:var(--accent);width:11px;height:11px;}
+.lbl-sep-wrap{display:flex;align-items:center;gap:5px;font-family:'Calibri','Trebuchet MS',sans-serif;font-size:11px;color:var(--muted);margin-top:2px;border-top:1px solid var(--border2);padding-top:4px;}
+.lbl-sep-input{font-family:'Calibri','Trebuchet MS',sans-serif;font-size:11px;width:36px;padding:2px 4px;border-radius:4px;border:1px solid var(--border);background:white;color:var(--text);}
+/* Map */
+#map-container{flex:1;position:relative;}
+#map{width:100%;height:100%;}
+/* Labels CSS */
+.feat-label{background:transparent!important;border:none!important;box-shadow:none!important;font-weight:600;pointer-events:none;white-space:nowrap;}
+.feat-label::before{display:none!important;}
+/* Drop/empty/loading */
+#drop-overlay{position:absolute;inset:0;background:rgba(240,240,237,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:2000;pointer-events:none;opacity:0;transition:opacity .2s;}
+#drop-overlay.visible{opacity:1;pointer-events:all;}
+.drop-icon{font-size:44px;animation:float 2s ease-in-out infinite;}@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+.drop-text{font-size:19px;font-weight:700;color:var(--accent);}
+.drop-sub{font-family:'Calibri','Trebuchet MS',sans-serif;font-size:11px;color:var(--muted);}
+#empty-state{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;pointer-events:none;z-index:5;}
+#empty-state.hidden{display:none!important;}
+.empty-icon{font-size:44px;opacity:.18;}.empty-title{font-size:16px;font-weight:700;opacity:.3;}
+.empty-sub{font-family:'Calibri','Trebuchet MS',sans-serif;font-size:11px;color:var(--muted);}
+#loading{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:none;flex-direction:column;align-items:center;gap:10px;z-index:2000;background:white;padding:22px 28px;border-radius:10px;border:1px solid var(--border);box-shadow:0 4px 20px rgba(0,0,0,.1);}
+#loading.visible{display:flex;}
+.spinner{width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;}@keyframes spin{to{transform:rotate(360deg)}}
+.load-text{font-family:'Calibri','Trebuchet MS',sans-serif;font-size:11px;color:var(--muted);}
+#info-panel{position:absolute;bottom:14px;right:14px;background:white;border:1px solid var(--border);border-radius:9px;padding:13px;min-width:200px;max-width:280px;z-index:500;display:none;max-height:260px;overflow-y:auto;box-shadow:0 3px 14px rgba(0,0,0,.08);}
+#info-panel.visible{display:block;}
+#info-panel h4{font-size:11px;color:var(--accent);font-family:'Calibri','Trebuchet MS',sans-serif;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;}
+.info-row{display:flex;gap:8px;font-size:11px;margin-bottom:4px;}
+.info-key{color:var(--muted);font-family:'Calibri','Trebuchet MS',sans-serif;min-width:70px;flex-shrink:0;}
+.info-val{color:var(--text);word-break:break-all;}
+#info-close{position:absolute;top:8px;right:10px;background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:2px 5px;}
+.stats-bar{padding:6px 12px;background:var(--surface);border-top:1px solid var(--border2);font-family:'Calibri','Trebuchet MS',sans-serif;font-size:11px;color:var(--muted);display:flex;gap:12px;flex-shrink:0;}
+.stat-val{color:var(--accent2);}
+#debug{position:absolute;top:10px;right:10px;background:rgba(255,255,255,.97);border:1px solid var(--border);border-radius:8px;padding:10px 12px;min-width:280px;max-width:380px;max-height:40vh;overflow-y:auto;z-index:1000;box-shadow:0 2px 10px rgba(0,0,0,.1);}
+#debug h5{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;display:flex;justify-content:space-between;}
+#debug-close{background:none;border:none;cursor:pointer;color:var(--muted);font-size:12px;padding:0;}
+.drow{display:flex;align-items:flex-start;gap:6px;margin-bottom:2px;line-height:1.5;}
+.drow .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:3px;}
+.d-ok .dot{background:#1a6b3c;}.d-err .dot{background:#cc3333;}.d-info .dot{background:#bbb;}
+.drow span{font-family:'Calibri','Trebuchet MS',sans-serif;font-size:11px;word-break:break-all;}
+.leaflet-container{background:#e8e8e4;}
+.sb-divider{padding:6px 12px 4px;font-size:9px;font-family:'Calibri','Trebuchet MS',sans-serif;color:var(--muted);letter-spacing:1.8px;text-transform:uppercase;border-top:1px solid var(--border2);margin-top:4px;}
+.ext-item{border-radius:7px;border:1px solid transparent;margin-bottom:5px;overflow:hidden;background:white;}
+.ext-item.active{border-color:rgba(15,79,168,.18);}
+.ext-row{display:flex;align-items:center;gap:8px;padding:8px 10px;}
+.ext-icon{width:14px;height:14px;border-radius:3px;flex-shrink:0;border:1.5px solid rgba(0,0,0,.12);display:flex;align-items:center;justify-content:center;font-size:9px;}
+.ext-info{flex:1;overflow:hidden;}
+.ext-name{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:'Calibri','Trebuchet MS',sans-serif;}
+.ext-meta{font-family:'Calibri','Trebuchet MS',sans-serif;font-size:11px;color:var(--muted);margin-top:1px;}
+.osm-zoom-msg{font-size:11px;color:var(--muted);padding:0 10px 8px;font-family:'Calibri','Trebuchet MS',sans-serif;display:none;}
+</style>
+</head>
+<body>
+<header>
+  <img src="data:image/png;base64,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" alt="Logo" style="height:80px;width:80px;object-fit:contain;flex-shrink:0;" />
+  <div style="display:flex;flex-direction:column;justify-content:center;line-height:1.25;"><span style="font-family:'Calibri','Trebuchet MS',sans-serif;font-size:15px;font-weight:700;color:#1a3a6b;letter-spacing:-.3px;">Aðalskipulag Eyjafjarðarsveitar</span><span style="font-family:'Calibri','Trebuchet MS',sans-serif;font-size:11px;color:#5a7aaa;letter-spacing:.5px;">Vinnslutillaga</span></div>
+  <button class="hdr-btn" id="open-btn" onclick="document.getElementById('file-input').click()" disabled>↑ Opna .gpkg</button>
+  <input type="file" id="file-input" accept=".gpkg,.gpkx"/>
+  <input type="file" id="qml-input-global" accept=".qml"/>
+  <span class="file-name" id="file-name-display">Hleð SQL.js…</span>
+</header>
+<div class="main">
+  <div id="sidebar">
+    <div class="sb-section">Lög <span id="layer-count">0</span></div>
+    <div id="layer-list">
+      <div style="padding:14px 12px;font-family:'Calibri','Trebuchet MS',sans-serif;font-size:11px;color:var(--muted);text-align:center;margin-top:12px;line-height:1.8;">Hlaðið upp .gpkg skrá<br>til að sjá lög</div>
+    </div>
+    <div class="stats-bar">Þættir: <span class="stat-val" id="stat-features">0</span> &nbsp;|&nbsp; Lög: <span class="stat-val" id="stat-layers">0</span></div>
+  </div>
+  <div id="map-container">
+    <div id="map"></div>
+    <div id="empty-state">
+      <div class="empty-icon">🗺️</div>
+      <div class="empty-title">Kortið er tómt</div>
+      <div class="empty-sub">Dragðu .gpkg skrá hingað eða smelltu á "Opna"</div>
+    </div>
+    <div id="drop-overlay">
+      <div class="drop-icon">📦</div><div class="drop-text">Sleppa til að opna</div>
+      <div class="drop-sub">.gpkg / .gpkx</div>
+    </div>
+    <div id="loading"><div class="spinner"></div><div class="load-msg" id="load-msg">Les gögn…</div></div>
+    <div id="info-panel">
+      <button id="info-close" onclick="closeInfo()">✕</button>
+      <h4>Eiginleikar</h4><div id="info-content"></div>
+    </div>
+    <div id="debug">
+      <h5>Greining <button id="debug-close" onclick="document.getElementById('debug').style.display='none'">✕</button></h5>
+      <div id="dlog"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.2/sql-wasm.js"></script>
+<script>
+'use strict';
+
+// ═══ Debug ════════════════════════════════════════════════════════════════════
+function dlog(msg, cls='info') {
+  const el = document.getElementById('dlog');
+  const r = document.createElement('div');
+  r.className = 'drow d-'+cls;
+  r.innerHTML = `<div class="dot"></div><span>${msg}</span>`;
+  el.appendChild(r); el.scrollTop = el.scrollHeight;
+  console[cls==='err'?'error':'log']('[GPKG]', msg);
+}
+
+// ═══ Map ══════════════════════════════════════════════════════════════════════
+const map = L.map('map',{zoomControl:true,attributionControl:true}).setView([64.9,-18.5],6);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{
+  attribution:'© OpenStreetMap © CARTO', maxZoom:20, subdomains:'abcd'
+}).addTo(map);
+dlog('Leaflet ✓','ok');
+
+// ═══ Proj4 ════════════════════════════════════════════════════════════════════
+proj4.defs('EPSG:3057','+proj=lcc +lat_1=64.25 +lat_2=65.75 +lat_0=65 +lon_0=-19 +x_0=500000 +y_0=500000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs');
+proj4.defs('EPSG:5325','+proj=lcc +lat_1=64.25 +lat_2=65.75 +lat_0=65 +lon_0=-19 +x_0=500000 +y_0=500000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs');
+proj4.defs('EPSG:8088','+proj=lcc +lat_1=64.25 +lat_2=65.75 +lat_0=65 +lon_0=-19 +x_0=500000 +y_0=500000 +ellps=GRS80 +units=m +no_defs');
+proj4.defs('EPSG:32627','+proj=utm +zone=27 +datum=WGS84 +units=m +no_defs');
+proj4.defs('EPSG:32628','+proj=utm +zone=28 +datum=WGS84 +units=m +no_defs');
+proj4.defs('EPSG:4326','+proj=longlat +datum=WGS84 +no_defs');
+proj4.defs('EPSG:3857','+proj=merc +a=6378137 +b=6378137 +lat_ts=0 +lon_0=0 +x_0=0 +y_0=0 +k=1 +units=m +nadgrids=@null +no_defs');
+dlog('Proj4 ✓','ok');
+
+let toWGS84 = (x,y) => [x,y];
+
+function detectProjection(db) {
+  let srid = null;
+  try { const r=db.exec("SELECT srs_id FROM gpkg_geometry_columns LIMIT 1"); if(r[0]&&r[0].values.length) srid=r[0].values[0][0]; } catch(e){}
+  if (!srid) { try { const r=db.exec("SELECT srs_id FROM gpkg_contents WHERE data_type='features' LIMIT 1"); if(r[0]&&r[0].values.length) srid=r[0].values[0][0]; } catch(e){} }
+  dlog('SRID: '+srid);
+  if (!srid || srid===4326) { toWGS84=(x,y)=>[x,y]; return; }
+  const key = 'EPSG:'+srid;
+  if (proj4.defs(key)) { toWGS84=(x,y)=>proj4(key,'EPSG:4326',[x,y]); dlog(key+' ✓','ok'); return; }
+  try {
+    const r=db.exec(`SELECT definition FROM gpkg_spatial_ref_sys WHERE srs_id=${srid} LIMIT 1`);
+    if (r[0]&&r[0].values.length) {
+      const wkt=r[0].values[0][0]||'';
+      if (wkt && wkt!=='undefined') { proj4.defs(key,wkt); toWGS84=(x,y)=>proj4(key,'EPSG:4326',[x,y]); dlog('WKT ✓','ok'); return; }
+    }
+  } catch(e){}
+  dlog('Óþekkt SRID '+srid+' → ISN93','err');
+  toWGS84=(x,y)=>{ try{return proj4('EPSG:3057','EPSG:4326',[x,y]);}catch(e){return[x,y];} };
+}
+
+// ═══ SVG Pattern registry ═════════════════════════════════════════════════════
+// ─── SVG pattern system ────────────────────────────────────────────────────
+// Leaflet creates its SVG renderer lazily (on first vector layer add).
+// We queue patterns and flush them after all features are on the map.
+const _patCache = {};                        // id → true when injected
+const _patQueue = [];                        // pending {id,w,h,angle,content}
+
+function _injectPattern({id,w,h,angle,content}) {
+  const svgEl = document.querySelector('#map svg');
+  if (!svgEl) return false;
+  let defs = svgEl.querySelector('defs');
+  if (!defs) { defs=document.createElementNS('http://www.w3.org/2000/svg','defs'); svgEl.insertBefore(defs,svgEl.firstChild); }
+  if (defs.querySelector('#'+id)) { _patCache[id]=true; return true; }
+  const pat = document.createElementNS('http://www.w3.org/2000/svg','pattern');
+  pat.setAttribute('id',id);
+  pat.setAttribute('patternUnits','userSpaceOnUse');
+  pat.setAttribute('width',w); pat.setAttribute('height',h);
+  if (angle) pat.setAttribute('patternTransform',`rotate(${angle})`);
+  pat.innerHTML = content;
+  defs.appendChild(pat);
+  _patCache[id] = true;
+  return true;
+}
+
+// Call after all layers are added to map (flushes queued patterns)
+function flushPatterns() {
+  const svgEl = document.querySelector('#map svg');
+  if (!svgEl) { setTimeout(flushPatterns, 80); return; }
+  while (_patQueue.length) { const p=_patQueue.shift(); _injectPattern(p); }
+}
+
+function makePattern(id, w, h, angle, content) {
+  if (_patCache[id]) return 'url(#'+id+')';
+  // Try immediate inject; if SVG not ready yet, queue for later
+  if (!_injectPattern({id,w,h,angle,content})) {
+    _patQueue.push({id,w,h,angle,content});
+    _patCache[id] = 'q'; // queued marker (treated as hit to avoid duplicate queueing)
+  }
+  return 'url(#'+id+')';
+}
+
+// single-direction hatch; bgColor = solid fill behind lines
+function makeHatch(angle, distanceMM, lineWidthMM, lineColor, bgColor) {
+  const sz = Math.max(3, distanceMM * 3.78);
+  const lw = Math.max(0.3, lineWidthMM * 3.78);
+  const id = `h_${(angle*10)|0}_${(sz*10)|0}_${(lw*10)|0}_${lineColor.replace(/[^\w]/g,'')}_${(bgColor||'').replace(/[^\w]/g,'')}`;
+  if (_patCache[id]) return 'url(#'+id+')';
+  const bg  = bgColor ? `<rect width="${sz}" height="${sz}" fill="${bgColor}"/>` : '';
+  const svg = `${bg}<line x1="${sz/2}" y1="0" x2="${sz/2}" y2="${sz}" stroke="${lineColor}" stroke-width="${lw}"/>`;
+  return makePattern(id, sz, sz, angle, svg);
+}
+
+// two-direction cross-hatch (merges two LinePatternFill angles into one tile)
+function makeDualHatch(a1, a2, distMM, lwMM, lineColor, bgColor) {
+  const sz = Math.max(3, distMM * 3.78);
+  const lw = Math.max(0.3, lwMM * 3.78);
+  const id = `dh_${(a1*10)|0}_${(a2*10)|0}_${(sz*10)|0}_${(lw*10)|0}_${lineColor.replace(/[^\w]/g,'')}`;
+  if (_patCache[id]) return 'url(#'+id+')';
+  // Draw both line sets inside a square tile; use a larger tile to cover both angles cleanly
+  const tsz = sz * 2;
+  const bg  = bgColor ? `<rect width="${tsz}" height="${tsz}" fill="${bgColor}"/>` : '';
+  // Diagonal hatch: draw lines across enlarged tile at given angle intervals
+  function linesAt(angle, spacing, size) {
+    const rad = angle * Math.PI / 180;
+    const cos = Math.cos(rad), sin = Math.sin(rad);
+    let lines = '';
+    for (let i = -size; i < size * 2; i += spacing) {
+      // Point on perpendicular to line direction, then draw across
+      const px = i * (-sin), py = i * cos;
+      const dx = cos * size * 2, dy = sin * size * 2;
+      lines += `<line x1="${(px-dx).toFixed(1)}" y1="${(py-dy).toFixed(1)}" x2="${(px+dx).toFixed(1)}" y2="${(py+dy).toFixed(1)}" stroke="${lineColor}" stroke-width="${lw}"/>`;
+    }
+    return lines;
+  }
+  const content = bg + linesAt(a1, sz, tsz) + linesAt(a2, sz, tsz);
+  return makePattern(id, tsz, tsz, 0, content);
+}
+
+function makeCrossHatch(angle, distanceMM, lineWidthMM, color) {
+  const sz = Math.max(3, distanceMM * 3.78);
+  const lw = Math.max(0.3, lineWidthMM * 3.78);
+  const id = `x_${(angle*10)|0}_${(sz*10)|0}_${(lw*10)|0}_${color.replace(/[^\w]/g,'')}`;
+  const svg = `<line x1="${sz/2}" y1="0" x2="${sz/2}" y2="${sz}" stroke="${color}" stroke-width="${lw}"/>
+               <line x1="0" y1="${sz/2}" x2="${sz}" y2="${sz/2}" stroke="${color}" stroke-width="${lw}"/>`;
+  return makePattern(id, sz, sz, angle, svg);
+}
+
+// ═══ QML parser ═══════════════════════════════════════════════════════════════
+
+function parseQML(xmlStr) {
+  const doc = new DOMParser().parseFromString(xmlStr, 'application/xml');
+  const renderer = doc.querySelector('renderer-v2');
+  let styler = () => defStyle();
+  if (renderer) {
+    const type = renderer.getAttribute('type');
+    dlog('QML renderer: '+type);
+    switch(type) {
+      case 'singleSymbol':      styler = buildSingleStyler(renderer);      break;
+      case 'categorizedSymbol': styler = buildCategorizedStyler(renderer); break;
+      case 'graduatedSymbol':   styler = buildGraduatedStyler(renderer);   break;
+      case 'RuleRenderer':      styler = buildRuleStyler(renderer);        break;
+      default: dlog('Óþekkt renderer: '+type,'err'); styler = buildSingleStyler(renderer);
+    }
+  }
+  const labelConfig = parseLabeling(doc);
+  return { styler, labelConfig };
+}
+
+function parseLabeling(doc) {
+  const lab = doc.querySelector('labeling');
+  if (!lab || lab.getAttribute('type') === 'no-labels') return null;
+  const settings = lab.querySelector('settings') || lab;
+  let fieldName = null;
+  const fe = settings.querySelector('fieldName');
+  if (fe) fieldName = fe.textContent.trim();
+  if (!fieldName) {
+    const ts = settings.querySelector('text-style');
+    if (ts) fieldName = ts.getAttribute('fieldName') || ts.getAttribute('field-name') || ts.getAttribute('field');
+  }
+  if (!fieldName) {
+    const expr = settings.querySelector('expr');
+    if (expr) fieldName = expr.textContent.replace(/^"+|"+$/g,'').trim();
+  }
+  if (!fieldName) return null;
+  const ts = settings.querySelector('text-style');
+  const fontSize  = parseFloat((ts && (ts.getAttribute('fontSize') || ts.getAttribute('font-size'))) || '10');
+  const fontColor = ts ? (ts.getAttribute('textColor') || ts.getAttribute('color') || '0,0,0,255') : '0,0,0,255';
+  const bold      = ts ? (ts.getAttribute('fontWeight') === '75' || ts.getAttribute('bold') === '1') : false;
+  const italic    = ts ? (ts.getAttribute('italic') === '1') : false;
+  const fontFamily = ts ? (ts.getAttribute('fontFamily') || ts.getAttribute('font-family') || 'Calibri') : 'Calibri';
+  const buf = settings.querySelector('text-buffer') || settings.querySelector('buffer');
+  const bufOn    = buf ? (buf.getAttribute('bufferDraw') === '1' || buf.getAttribute('draw') === '1') : false;
+  const bufSize  = buf ? parseFloat(buf.getAttribute('bufferSize') || buf.getAttribute('size') || '1') : 1;
+  const bufColor = buf ? (buf.getAttribute('bufferColor') || buf.getAttribute('color') || '255,255,255,255') : '255,255,255,255';
+  const colObj = qColor(fontColor);
+  const bufObj = qColor(bufColor);
+  dlog(`Labels: "${fieldName}", ${fontSize}pt, buf=${bufOn}`);
+  return {
+    fieldName,
+    fontSize: Math.max(11, Math.min(fontSize, 24)),
+    color: colObj.hex,
+    bold,
+    italic,
+    fontFamily,
+    bufferOn: bufOn,
+    bufferSize: bufSize * 2,
+    bufferColor: bufObj.hex
+  };
+}
+
+function readProps(layerEl) {
+  const p = {};
+  for (const prop of layerEl.querySelectorAll('prop'))               p[prop.getAttribute('k')] = prop.getAttribute('v');
+  for (const o    of layerEl.querySelectorAll('Option[name][value]')) p[o.getAttribute('name')] = o.getAttribute('value');
+  return p;
+}
+
+// Parse a single SimpleLine layer element → style object
+function parseSimpleLine(layerEl, symAlpha) {
+  const p = readProps(layerEl);
+  const s = qColor(p['line_color'] || p['color'] || '0,0,0,255');
+  const lw = parseFloat(p['line_width'] || p['width'] || '0.26');
+  const wPx = Math.max(0.5, lw * 3.78);
+  const useCustom = p['use_custom_dash'] === '1';
+  const customDash = p['customdash'] || '';
+  const pen = p['line_style'] || p['penstyle'] || 'solid';
+  let dashArray = null;
+  if (useCustom && customDash) {
+    // Convert QGIS MM customdash to pixel dashArray
+    dashArray = customDash.split(';').map(v => Math.max(0.5, parseFloat(v) * 3.78).toFixed(1)).join(',');
+  } else {
+    dashArray = penStyleToDash(pen, wPx);
+  }
+  return {
+    color: s.hex,
+    weight: wPx,
+    opacity: (s.a / 255) * symAlpha,
+    fillColor: 'none',
+    fillOpacity: 0,
+    radius: 5,
+    dashArray
+  };
+}
+
+// symbolToStyle returns an ARRAY of style objects (back-to-front render order).
+// Line symbols with multiple SimpleLine layers (e.g. road casing) return one
+// style per layer. Fill/marker symbols return a single-element array.
+function symbolToStyle(sym) {
+  if (!sym) return [defStyle()];
+  const symAlpha = parseFloat(sym.getAttribute('alpha') || '1');
+  const symType  = (sym.getAttribute('type') || 'fill').toLowerCase();
+  const layers   = [...sym.querySelectorAll(':scope > layer')].filter(l => l.getAttribute('enabled') !== '0');
+  if (!layers.length) return [defStyle()];
+
+  // ── LINE symbol: render each SimpleLine as its own pass ─────────────────
+  if (symType === 'line') {
+    const lineStyles = [];
+    for (const layerEl of layers) {
+      const ltype = (layerEl.getAttribute('class') || '').toLowerCase();
+      if (ltype === 'simpleline' || ltype === 'line' || ltype === '') {
+        lineStyles.push(parseSimpleLine(layerEl, symAlpha));
+      }
+      // MarkerLine etc. — skip (no clean Leaflet equivalent)
+    }
+    return lineStyles.length ? lineStyles : [defStyle()];
+  }
+
+  // ── FILL / MARKER symbol: merge into single style ────────────────────────
+  let result = { ...defStyle() };
+  let hatchSet = false;
+  for (const layerEl of layers) {
+    const ltype = (layerEl.getAttribute('class') || layerEl.getAttribute('type') || '').toLowerCase();
+    const p = readProps(layerEl);
+
+    // LinePatternFill (hatching)
+    if (ltype.includes('linepattern') || ltype === 'linepatternfill') {
+      const angle    = parseFloat(p['line_angle']    || p['angle']    || '45');
+      const distance = parseFloat(p['line_distance'] || p['distance'] || '2');
+      const lw       = parseFloat(p['line_width']    || p['width']    || '0.26');
+      // IMPORTANT: in QGIS QML, line_color is the hatch line color; color is sub-symbol bg (ignore it)
+      let lineColor;
+      const subSym = layerEl.querySelector('symbol');
+      if (subSym) { const subStyles = symbolToStyle(subSym); lineColor = (subStyles[0] && subStyles[0].color) || '#000'; }
+      else {
+        const lc = qColor(p['line_color'] || '0,0,0,255');
+        lineColor = lc.hex;
+        // If line_color has alpha=0 (transparent placeholder), fall back to color prop
+        if (lc.a === 0) lineColor = qColor(p['color'] || '0,0,0,255').hex;
+      }
+      // Merge two LinePatternFill layers into a dual-hatch tile
+      if (hatchSet && result._hatchAngle !== undefined) {
+        // Second hatch layer → combine with first
+        const url = makeDualHatch(result._hatchAngle, angle, distance, lw, lineColor,
+                                  result._hatchBg || null);
+        if (url) { result.fillColor = url; result.fillOpacity = symAlpha; }
+        delete result._hatchAngle; delete result._hatchBg;
+        continue;
+      }
+      // First hatch layer
+      const bgColor = (!hatchSet && result.fillColor && !result.fillColor.startsWith('url(') && result.fillOpacity > 0)
+        ? result.fillColor : null;
+      const url = makeHatch(angle, distance, lw, lineColor, bgColor);
+      if (url) {
+        result.fillColor = url; result.fillOpacity = symAlpha; hatchSet = true;
+        result._hatchAngle = angle; result._hatchBg = bgColor;
+      }
+      // Don't apply outline from LinePatternFill layer (it has no outline_color)
+      continue;
+    }
+
+    // SVGFill / PointPatternFill → cross-hatch approximation
+    if (ltype.includes('svgfill') || ltype.includes('pointpattern')) {
+      const dist = parseFloat(p['distance_x'] || p['distance'] || '3');
+      const col  = qColor(p['color'] || '0,0,0,255');
+      const url  = makeCrossHatch(0, dist, 0.5, col.hex);
+      if (url && !hatchSet) { result.fillColor = url; result.fillOpacity = symAlpha; hatchSet = true; }
+      continue;
+    }
+
+    // SimpleFill
+    if (ltype === '' || ltype === 'simplefill' || ltype === 'fill') {
+      const fillStyle = p['style'] || p['brush_style'] || 'solid';
+      const fill   = qColor(p['color'] || p['fillColor'] || '128,128,128,255');
+      const stroke = qColor(p['outline_color'] || p['color_border'] || p['line_color'] || '0,0,0,255');
+      const outW   = parseFloat(p['outline_width'] || '0.26');
+      const outStyle = p['outline_style'] || p['border_style'] || 'solid';
+      if (!hatchSet) {
+        if (fillStyle === 'no' || fillStyle === 'NoBrush' || fill.a === 0) {
+          result.fillOpacity = 0;
+        } else {
+          result.fillColor   = fill.hex;
+          result.fillOpacity = (fill.a / 255) * symAlpha;
+        }
+      }
+      result.color      = stroke.hex;
+      result.weight     = Math.max(0.5, outW * 3.78);
+      result.opacity    = (stroke.a / 255) * symAlpha;
+      result.dashArray  = penStyleToDash(outStyle, result.weight);
+      continue;
+    }
+
+    // SimpleLine inside a fill symbol (outline-only shapes)
+    if (ltype === 'simpleline' || ltype === 'line') {
+      const s  = qColor(p['line_color'] || p['color'] || '0,0,0,255');
+      const lw = parseFloat(p['line_width'] || p['width'] || '0.26');
+      const useCustom = p['use_custom_dash'] === '1';
+      const customDash = p['customdash'] || '';
+      const pen = p['line_style'] || p['penstyle'] || 'solid';
+      const wPx = Math.max(0.5, lw * 3.78);
+      result.color      = s.hex;
+      result.weight     = wPx;
+      result.opacity    = (s.a / 255) * symAlpha;
+      result.fillOpacity = 0;
+      if (useCustom && customDash) {
+        result.dashArray = customDash.split(';').map(v => Math.max(0.5, parseFloat(v) * 3.78).toFixed(1)).join(',');
+      } else {
+        result.dashArray = penStyleToDash(pen, wPx);
+      }
+      continue;
+    }
+
+    // SimpleMarker
+    if (ltype === 'simplemarker' || ltype === 'marker') {
+      const fill   = qColor(p['color'] || p['fillColor'] || '128,128,128,255');
+      const stroke = qColor(p['outline_color'] || p['color_border'] || '0,0,0,255');
+      result.fillColor   = fill.hex;
+      result.fillOpacity = (fill.a / 255) * symAlpha;
+      result.color       = stroke.hex;
+      result.weight      = parseFloat(p['outline_width'] || '0.4') * 3.78;
+      result.opacity     = (stroke.a / 255) * symAlpha;
+      result.radius      = Math.max(2, Math.min(parseFloat(p['size'] || '2') * 1.8, 20));
+      continue;
+    }
+  }
+  return [result];
+}
+
+function penStyleToDash(pen, weight) {
+  const w = Math.max(0.5, weight);
+  switch(pen) {
+    case 'dash':         return `${4*w},${2*w}`;
+    case 'dot':          return `${w},${2*w}`;
+    case 'dash dot':     return `${4*w},${2*w},${w},${2*w}`;
+    case 'dash dot dot': return `${4*w},${2*w},${w},${2*w},${w},${2*w}`;
+    default:             return null;
+  }
+}
+
+function defStyle() {
+  return { color:'#666', weight:1.5, opacity:.85, fillColor:'#999', fillOpacity:.25, radius:5, dashArray:null };
+}
+
+function qColor(str) {
+  str = (str||'').trim();
+  if (str.includes(',')) {
+    const [r=0,g=0,b=0,a=255] = str.split(',').map(s=>parseInt(s,10));
+    return { r,g,b,a, hex:`rgba(${r},${g},${b},${(a/255).toFixed(2)})` };
+  }
+  if (str.startsWith('#') && str.length===9) {
+    const a=parseInt(str.slice(1,3),16), r=parseInt(str.slice(3,5),16), g=parseInt(str.slice(5,7),16), b=parseInt(str.slice(7,9),16);
+    return { r,g,b,a, hex:`rgba(${r},${g},${b},${(a/255).toFixed(2)})` };
+  }
+  if (str.startsWith('#') && str.length===7) {
+    const r=parseInt(str.slice(1,3),16), g=parseInt(str.slice(3,5),16), b=parseInt(str.slice(5,7),16);
+    return { r,g,b,a:255, hex:str };
+  }
+  return { r:128,g:128,b:128,a:255, hex:'#808080' };
+}
+
+// symMap: symbol name → array of styles
+function symMap(renderer) {
+  const m = {};
+  for (const s of renderer.querySelectorAll(':scope > symbols > symbol'))
+    m[s.getAttribute('name')] = symbolToStyle(s); // always returns array
+  return m;
+}
+
+function buildSingleStyler(r) {
+  const styles = symbolToStyle(r.querySelector(':scope > symbols > symbol'));
+  return () => styles;
+}
+function buildCategorizedStyler(r) {
+  const attr = r.getAttribute('attr'), sm = symMap(r), cm = {};
+  for (const c of r.querySelectorAll('categories > category'))
+    cm[c.getAttribute('value')] = c.getAttribute('symbol');
+  return (p) => {
+    const v = String(p[attr] ?? '');
+    // Exact match → "other values" empty-key → [defStyle()]
+    const symKey = cm.hasOwnProperty(v) ? cm[v] : cm[''];
+    return (symKey !== undefined ? sm[symKey] : null) || [defStyle()];
+  };
+}
+function buildGraduatedStyler(r) {
+  const attr = r.getAttribute('attr'), sm = symMap(r);
+  const ranges = [...r.querySelectorAll('ranges > range')].map(el => ({
+    lo:parseFloat(el.getAttribute('lower')), hi:parseFloat(el.getAttribute('upper')), sym:el.getAttribute('symbol')
+  }));
+  return (p) => { const v=parseFloat(p[attr]); const rng=ranges.find(r=>v>=r.lo&&v<=r.hi); return rng?(sm[rng.sym]||[defStyle()]):[defStyle()]; };
+}
+function buildRuleStyler(r) {
+  const sm = symMap(r), rules = [];
+  const collect = (el) => {
+    for (const rule of el.querySelectorAll(':scope > rules > rule, :scope > rule')) {
+      rules.push({ filter:(rule.getAttribute('filter')||'').trim(), sym:rule.getAttribute('symbol') });
+      collect(rule);
+    }
+  };
+  collect(r);
+  return (p) => {
+    for (const rule of rules) {
+      if (!rule.filter || rule.filter==='ELSE' || evalFilter(rule.filter,p))
+        if (rule.sym && sm[rule.sym]) return sm[rule.sym];
+    }
+    return [defStyle()];
+  };
+}
+function evalFilter(filter, props) {
+  try {
+    let e = filter
+      .replace(/"([^"]+)"/g,(_,f)=>{ const v=props[f]; return v===null||v===undefined?'null':typeof v==='number'?v:`"${String(v).replace(/"/g,'\\"')}"`; })
+      .replace(/'([^']*)'/g,(_,s)=>`"${s}"`)
+      .replace(/\bAND\b/g,'&&').replace(/\bOR\b/g,'||').replace(/\bNOT\b/g,'!')
+      .replace(/\bIS NULL\b/g,'===null').replace(/\bIS NOT NULL\b/g,'!==null');
+    return !!Function('"use strict";return('+e+')')();
+  } catch(e){ return false; }
+}
+
+// ═══ Label helpers ════════════════════════════════════════════════════════════
+function geomCentroid(geom) {
+  if (!geom) return null;
+  switch(geom.type) {
+    case 'Point': return geom.coordinates;
+    case 'MultiPoint': return geom.coordinates[0];
+    case 'LineString': return midpoint(geom.coordinates);
+    case 'MultiLineString': return midpoint(geom.coordinates[0]);
+    case 'Polygon': return ringCentroid(geom.coordinates[0]);
+    case 'MultiPolygon': {
+      let best = null, bestArea = -1;
+      for (const poly of geom.coordinates) {
+        const a = Math.abs(ringArea(poly[0]));
+        if (a > bestArea) { bestArea = a; best = poly[0]; }
+      }
+      return best ? ringCentroid(best) : null;
+    }
+    case 'GeometryCollection':
+      return geom.geometries.length ? geomCentroid(geom.geometries[0]) : null;
+    default: return null;
+  }
+}
+
+function midpoint(coords) {
+  const i = Math.floor(coords.length / 2);
+  return coords[i];
+}
+
+function ringCentroid(ring) {
+  if (!ring || ring.length < 3) return null;
+  let x = 0, y = 0, area = 0;
+  const n = ring.length;
+  for (let i = 0; i < n - 1; i++) {
+    const [x0,y0] = ring[i], [x1,y1] = ring[i+1];
+    const cross = x0*y1 - x1*y0;
+    area += cross;
+    x += (x0+x1)*cross;
+    y += (y0+y1)*cross;
+  }
+  area /= 2;
+  if (Math.abs(area) < 1e-12) {
+    let ax=0,ay=0;
+    for(const[cx,cy]of ring){ax+=cx;ay+=cy;}
+    return [ax/(ring.length),ay/(ring.length)];
+  }
+  return [x/(6*area), y/(6*area)];
+}
+
+function ringArea(ring) {
+  let a = 0;
+  for (let i=0,n=ring.length-1; i<n; i++) a += ring[i][0]*ring[i+1][1] - ring[i+1][0]*ring[i][1];
+  return a/2;
+}
+
+function buildLabelMarker(text, latlng, labelConfig) {
+  const cfg = labelConfig;
+  const fs = cfg.fontSize || 10;
+  let textShadow = '';
+  if (cfg.bufferOn) {
+    const b = cfg.bufferColor;
+    const s = Math.max(1, cfg.bufferSize);
+    textShadow = `${s}px ${s}px 0 ${b}, -${s}px ${s}px 0 ${b}, ${s}px -${s}px 0 ${b}, -${s}px -${s}px 0 ${b}, 0 ${s}px 0 ${b}, 0 -${s}px 0 ${b}, ${s}px 0 0 ${b}, -${s}px 0 0 ${b}`;
+  }
+  const fontStyle = [
+    cfg.bold   ? 'font-weight:700' : '',
+    cfg.italic ? 'font-style:italic' : '',
+    `font-size:${fs}px`,
+    `color:${cfg.color}`,
+    textShadow ? `text-shadow:${textShadow}` : '',
+    `font-family:${cfg.fontFamily},'Trebuchet MS',sans-serif`,
+    'white-space:nowrap',
+    'pointer-events:none',
+    'line-height:1'
+  ].filter(Boolean).join(';');
+  const icon = L.divIcon({
+    className: 'feat-label',
+    html: `<span style="${fontStyle}">${text}</span>`,
+    iconAnchor: [0,0]
+  });
+  return L.marker(latlng, { icon, interactive:false, keyboard:false, zIndexOffset:-100 });
+}
+
+// ═══ State ════════════════════════════════════════════════════════════════════
+const COLORS = ['#1a6b3c','#0f4fa8','#c46200','#8b1a1a','#6a1a8b','#1a6b6b','#4a7a00','#8b5a00'];
+let LAYERS = {}, totalFeatures = 0, qmlTargetTable = null;
+let SQL = null;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// STILLINGAR — Skrár sem hlaðast sjálfkrafa
+// ═══════════════════════════════════════════════════════════════════════════════
+const AUTO_GPKG_URLS = [
+  'Landnotkun.gpkg',
+  'Mannvirki.gpkg',
+  'Hlin_20m.gpkg',
+];
+
+// QML stíll per töfluheiti (table name) í GPKG skránni
+const AUTO_QML = {
+  'Landnotkun':        'landnotkun.qml',
+  'onnurakv_flakar':   'onnurakv_flakar.qml',
+  'onnurakv_punktar':  'onnurakv_punktar.qml',
+  'onnur_akv_linur':   'onnurakv_linur.qml',
+};
+// ═══════════════════════════════════════════════════════════════════════════════
+
+window.addEventListener('load', () => {
+  if (typeof initSqlJs === 'undefined') { dlog('sql-wasm.js hleðst ekki!','err'); return; }
+  initSqlJs({ locateFile:()=>'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.2/sql-wasm.wasm' })
+    .then(S => {
+      SQL=S; dlog('SQL.js ✓','ok');
+      document.getElementById('open-btn').disabled=false;
+      document.getElementById('file-name-display').textContent='Engin skrá valin…';
+      if (AUTO_GPKG_URLS && AUTO_GPKG_URLS.length) autoLoadAllGPKGs();
+    })
+    .catch(e=>dlog('SQL.js: '+e.message,'err'));
+});
+
+// Load all GPKGs in sequence, then apply QML styles, then finalise
+async function autoLoadAllGPKGs() {
+  // Reset everything
+  Object.values(LAYERS).forEach(l=>{try{map.removeLayer(l.group);map.removeLayer(l.labelGroup);}catch(e){}});
+  LAYERS={}; totalFeatures=0;
+  document.getElementById('loading').classList.add('visible');
+  document.getElementById('empty-state').classList.add('hidden');
+  document.getElementById('dlog').innerHTML='';
+
+  for (const url of AUTO_GPKG_URLS) {
+    try {
+      document.getElementById('load-msg').textContent = 'Hleð ' + url + '…';
+      document.getElementById('file-name-display').textContent = 'Hleð ' + url + '…';
+      dlog('Sæki GPKG: ' + url);
+      const resp = await fetch(url);
+      if (!resp.ok) { dlog('HTTP ' + resp.status + ' – ' + url, 'err'); continue; }
+      const buf = await resp.arrayBuffer();
+      dlog('Sótt ' + url + ': ' + (buf.byteLength/1024).toFixed(0) + ' KB', 'ok');
+      parseGPKG(new Uint8Array(buf), /*additive=*/true);
+    } catch(e) {
+      dlog('Villa hlöðun ' + url + ': ' + e.message, 'err');
+    }
+  }
+
+  // Apply QML styles for all known tables
+  await autoLoadQMLs();
+
+  // Final render pass + sidebar + labels
+  finalizeLayers();
+}
+
+async function autoLoadQMLs() {
+  for (const [table, qmlUrl] of Object.entries(AUTO_QML)) {
+    if (!LAYERS[table]) { dlog('QML: lag "' + table + '" finnst ekki, sleppir'); continue; }
+    try {
+      dlog('Sæki QML: ' + qmlUrl);
+      const resp = await fetch(qmlUrl);
+      if (!resp.ok) { dlog('QML ' + qmlUrl + ': HTTP ' + resp.status, 'err'); continue; }
+      const text = await resp.text();
+      const {styler, labelConfig} = parseQML(text);
+      const lo = LAYERS[table];
+      lo.qmlStyler = styler;
+      lo.qmlName   = qmlUrl;
+      if (labelConfig) {
+        lo.labelConfig = labelConfig;
+        if (labelConfig.fieldName) {
+          lo.labelFields = [labelConfig.fieldName];
+          dlog('Label dálkur "' + table + '": ' + labelConfig.fieldName, 'ok');
+        }
+      }
+      redrawLayer(table);
+      updateCtrlRow(table);
+      dlog('QML hlaðið: ' + qmlUrl + ' → ' + table, 'ok');
+    } catch(e) {
+      dlog('QML villa (' + qmlUrl + '): ' + e.message, 'err');
+    }
+  }
+}
+
+// Called after all GPKGs + QMLs are loaded (also called from manual parseGPKG)
+// ═══ Extra (WMS + OSM) layers ═══════════════════════════════════════════════
+const LMI_WMS = 'https://gis.lmi.is/geoserver/wms';
+
+const EXT_LAYERS = {
+  haedarlinur: {
+    id: 'haedarlinur',
+    name: 'Hæðarlínur (LMÍ)',
+    meta: 'IS 50V · 20/100m',
+    icon: '〰',
+    color: '#7b5c2e',
+    leafletLayer: null,
+    on: false,
+    build: () => L.tileLayer.wms(LMI_WMS, {
+      layers: 'IS_50V:is50v_haedarlinur',
+      format: 'image/png',
+      transparent: true,
+      version: '1.1.1',
+      attribution: '© Landmælingar Íslands',
+      opacity: 0.7
+    })
+  },
+  ornefni: {
+    id: 'ornefni',
+    name: 'Örnefni (LMÍ)',
+    meta: 'IS 50V · 1:50.000',
+    icon: 'Á',
+    color: '#333',
+    leafletLayer: null,
+    on: false,
+    build: () => L.tileLayer.wms(LMI_WMS, {
+      layers: 'IS_50V:ornefni',
+      format: 'image/png',
+      transparent: true,
+      version: '1.1.1',
+      attribution: '© Landmælingar Íslands',
+      opacity: 1.0
+    })
+  },
+  buildings: {
+    id: 'buildings',
+    name: 'Byggingar (OSM)',
+    meta: 'OpenStreetMap · sótt á kröfu',
+    icon: '⬜',
+    color: '#c46200',
+    leafletLayer: null,
+    on: false,
+    build: () => null   // loaded via Overpass, not a static tile layer
+  }
+};
+
+let _osmBuildingsGroup = null;
+let _osmBuildingsBbox  = null;  // last fetched bbox string
+
+function toggleExtLayer(id) {
+  const el = EXT_LAYERS[id];
+  if (!el) return;
+  el.on = !el.on;
+  const btn = document.getElementById('ext-tog-'+id);
+  const item = document.getElementById('ext-item-'+id);
+  if (btn) btn.classList.toggle('on', el.on);
+  if (item) item.classList.toggle('active', el.on);
+
+  if (id === 'buildings') {
+    if (el.on) {
+      if (!_osmBuildingsGroup) _osmBuildingsGroup = L.layerGroup().addTo(map);
+      else _osmBuildingsGroup.addTo(map);
+      loadOSMBuildings();
+    } else {
+      if (_osmBuildingsGroup) map.removeLayer(_osmBuildingsGroup);
+    }
+    return;
+  }
+
+  // WMS layers
+  if (el.on) {
+    if (!el.leafletLayer) el.leafletLayer = el.build();
+    if (el.leafletLayer) el.leafletLayer.addTo(map);
+  } else {
+    if (el.leafletLayer) map.removeLayer(el.leafletLayer);
+  }
+}
+
+async function loadOSMBuildings() {
+  const zoom = map.getZoom();
+  const msg = document.getElementById('osm-bldg-msg');
+  if (zoom < 13) {
+    if (msg) { msg.textContent = 'Þysjaðu inn á svæðið (zoom ≥ 13)'; msg.style.display='block'; }
+    return;
+  }
+  if (msg) msg.style.display = 'none';
+  if (_osmInflight) return;  // one request at a time
+  const b = map.getBounds();
+  const bboxStr = [b.getSouth(),b.getWest(),b.getNorth(),b.getEast()].map(v=>v.toFixed(5)).join(',');
+  if (bboxStr === _osmBuildingsBbox) return;
+  _osmBuildingsBbox = bboxStr;
+  _osmInflight = true;
+  if (_osmBuildingsGroup) _osmBuildingsGroup.clearLayers();
+  dlog('Sæki OSM byggingar…');
+  const query = `[out:json][timeout:25];(way["building"](${bboxStr});relation["building"](${bboxStr}););out body;>;out skel qt;`;
+  try {
+    const resp = await fetch('https://overpass-api.de/api/interpreter', {
+      method:'POST', body: 'data='+encodeURIComponent(query)
+    });
+    if (resp.status === 429) {
+      _osmBuildingsBbox = null;  // allow retry
+      _osmBackoff = Math.min((_osmBackoff||0) + 8000, 60000);  // exponential backoff up to 60s
+      throw new Error('HTTP 429 – of margar beiðnir, bíð '+(_osmBackoff/1000)+'s');
+    }
+    _osmBackoff = 0;  // reset backoff on success
+    if (!resp.ok) throw new Error('HTTP '+resp.status);
+    const data = await resp.json();
+    const geojson = osmToGeoJSON(data);
+    let count = 0;
+    for (const feat of geojson.features) {
+      if (!feat.geometry) continue;
+      L.geoJSON(feat, {
+        style: () => ({ color:'#a0522d', weight:1, opacity:.9, fillColor:'#d4956a', fillOpacity:.35 }),
+        onEachFeature: (f, layer) => {
+          layer.on('click', e => {
+            const attrs = f.properties || {};
+            _clickBuf.push({ tableName:'buildings', attrs });
+            clearTimeout(_clickTimer);
+            _clickTimer = setTimeout(() => { showMultiInfo(_clickBuf); _clickBuf = []; }, 40);
+          });
+        }
+      }).addTo(_osmBuildingsGroup);
+      count++;
+    }
+    dlog('OSM byggingar: '+count+' ✓','ok');
+  } catch(e) { dlog('OSM villa: '+e.message,'err'); }
+  finally { _osmInflight = false; }
+}
+
+// Minimal OSM JSON → GeoJSON converter (ways only)
+function osmToGeoJSON(osm) {
+  const nodes = {};
+  for (const el of osm.elements) if (el.type==='node') nodes[el.id] = [el.lon, el.lat];
+  const features = [];
+  for (const el of osm.elements) {
+    if (el.type !== 'way' || !el.nodes) continue;
+    const coords = el.nodes.map(nid => nodes[nid]).filter(Boolean);
+    if (coords.length < 3) continue;
+    features.push({ type:'Feature', geometry:{ type:'Polygon', coordinates:[coords] }, properties: el.tags||{} });
+  }
+  return { type:'FeatureCollection', features };
+}
+
+// Reload OSM buildings on map move — debounced 1.5s, no reload while request in-flight
+let _osmMoveTimer = null;
+let _osmInflight  = false;
+let _osmBackoff   = 0;  // extra delay after 429
+
+map.on('moveend', () => {
+  if (!EXT_LAYERS.buildings.on || map.getZoom() < 13) return;
+  clearTimeout(_osmMoveTimer);
+  _osmMoveTimer = setTimeout(() => {
+    if (_osmInflight) return;
+    _osmBuildingsBbox = null;
+    loadOSMBuildings();
+  }, 1500 + _osmBackoff);
+});
+
+function buildExtSidebar() {
+  const list = document.getElementById('layer-list');
+  // Divider
+  const div = document.createElement('div');
+  div.className = 'sb-divider';
+  div.textContent = 'Viðbótarlög';
+  list.appendChild(div);
+
+  for (const el of Object.values(EXT_LAYERS)) {
+    const item = document.createElement('div');
+    item.className = 'ext-item';
+    item.id = 'ext-item-'+el.id;
+    item.innerHTML = `
+      <div class="ext-row">
+        <div class="ext-icon" style="background:${el.color}20;color:${el.color};border-color:${el.color}44">${el.icon}</div>
+        <div class="ext-info">
+          <div class="ext-name">${el.name}</div>
+          <div class="ext-meta">${el.meta}</div>
+        </div>
+        <button class="layer-toggle" id="ext-tog-${el.id}" onclick="toggleExtLayer('${el.id}')"></button>
+      </div>
+      ${el.id==='buildings'?`<div class="osm-zoom-msg" id="osm-bldg-msg"></div>`:''}`;
+    list.appendChild(item);
+  }
+}
+
+function finalizeLayers() {
+  const allLayers = Object.values(LAYERS).map(lo => ({ table: lo.table, name: lo.name }));
+  buildExtSidebar();    // external layers at top
+  buildSidebar(allLayers);
+  const total = Object.values(LAYERS).reduce((s,lo)=>s+lo.features.length,0);
+  document.getElementById('stat-features').textContent = total.toLocaleString('is');
+  document.getElementById('stat-layers').textContent = allLayers.length + Object.keys(EXT_LAYERS).length;
+  fitAll();
+  document.getElementById('loading').classList.remove('visible');
+  document.getElementById('file-name-display').textContent =
+    AUTO_GPKG_URLS.length > 1 ? AUTO_GPKG_URLS.join(', ') : (AUTO_GPKG_URLS[0] || 'Hlaðið');
+  if (!allLayers.length) document.getElementById('empty-state').classList.remove('hidden');
+  // Inject any queued SVG hatch patterns now that Leaflet SVG is ready
+  flushPatterns();
+
+  // Auto-enable labels: flokkur || CASE WHEN numer=0 THEN '' ELSE to_string(numer) END
+  for (const tbl of Object.keys(LAYERS)) {
+    const lo = LAYERS[tbl];
+    // "flokkur" || CASE WHEN "numer" = 0 THEN '' ELSE to_string("numer") END
+    lo.labelExpr = (attrs) => {
+      const flokkur = (attrs['flokkur'] != null) ? String(attrs['flokkur']) : '';
+      const numer   = attrs['numer'];
+      const numerStr = (numer === null || numer === undefined ||
+                        numer === 0 || numer === '0' ||
+                        (typeof numer === 'number' && numer === 0)) ? '' : String(numer);
+      const result = flokkur + numerStr;
+      return result.trim() !== '' ? result : null;
+    };
+    lo.labelsOn = true;
+    lo.labelGroup.addTo(map);
+    rebuildLabels(tbl);
+    updateCtrlRow(tbl);
+  }
+}
+
+// ═══ File events ══════════════════════════════════════════════════════════════
+document.getElementById('file-input').addEventListener('change', e=>{ if(e.target.files[0]) loadGPKGFile(e.target.files[0]); });
+document.getElementById('qml-input-global').addEventListener('change', e=>{ if(e.target.files[0]&&qmlTargetTable) loadQMLFile(e.target.files[0],qmlTargetTable); e.target.value=''; });
+const mc = document.getElementById('map-container');
+mc.addEventListener('dragover',e=>{e.preventDefault();document.getElementById('drop-overlay').classList.add('visible');});
+mc.addEventListener('dragleave',()=>document.getElementById('drop-overlay').classList.remove('visible'));
+mc.addEventListener('drop',e=>{e.preventDefault();document.getElementById('drop-overlay').classList.remove('visible');if(e.dataTransfer.files[0])loadGPKGFile(e.dataTransfer.files[0]);});
+document.body.addEventListener('dragover',e=>e.preventDefault());
+
+// ═══ Load GPKG ════════════════════════════════════════════════════════════════
+function loadGPKGFile(file) {
+  if (!SQL) { dlog('SQL.js ekki tilbúið!','err'); return; }
+  document.getElementById('file-name-display').textContent = file.name;
+  document.getElementById('loading').classList.add('visible');
+  document.getElementById('empty-state').classList.add('hidden');
+  document.getElementById('dlog').innerHTML = '';
+  document.getElementById('debug').style.display = '';
+  dlog('Opnar: '+file.name+' ('+(file.size/1024).toFixed(0)+' KB)');
+  const r = new FileReader();
+  r.onload = e => { try { LAYERS={}; totalFeatures=0; parseGPKG(new Uint8Array(e.target.result)); } catch(err) { dlog('Villa: '+err.message,'err'); document.getElementById('loading').classList.remove('visible'); } };
+  r.readAsArrayBuffer(file);
+}
+
+// ═══ Parse GPKG ═══════════════════════════════════════════════════════════════
+function parseGPKG(data, additive=false) {
+  let db;
+  try { db=new SQL.Database(data); dlog('SQLite ✓','ok'); }
+  catch(e) { dlog('SQLite: '+e.message,'err'); document.getElementById('loading').classList.remove('visible'); return; }
+
+  detectProjection(db);
+
+  let layers=[];
+  try {
+    const r=db.exec("SELECT table_name, identifier FROM gpkg_contents WHERE data_type='features'");
+    if(r[0]&&r[0].values.length){ layers=r[0].values.map(v=>({table:v[0],name:v[1]||v[0]})); dlog('Lög: '+layers.map(l=>l.name).join(', '),'ok'); }
+  } catch(e) { dlog('gpkg_contents: '+e.message,'err'); }
+
+  if (!layers.length) {
+    try {
+      const t=db.exec("SELECT name FROM sqlite_master WHERE type='table'");
+      if(t[0]) for(const[tn]of t[0].values){try{const ci=db.exec(`PRAGMA table_info("${tn}")`);if(ci[0]&&ci[0].values.some(c=>/geom|geometry|shape|wkb/i.test(c[1])))layers.push({table:tn,name:tn});}catch(e2){}}
+    }catch(e){}
+  }
+
+  if (!additive) {
+    Object.values(LAYERS).forEach(l=>{try{map.removeLayer(l.group);map.removeLayer(l.labelGroup);}catch(e){}});
+    LAYERS={}; totalFeatures=0;
+  }
+
+  if (!layers.length) { dlog('Engin lög!','err'); if(!additive) document.getElementById('loading').classList.remove('visible'); return; }
+
+  for (let i=0; i<layers.length; i++) {
+    const layer=layers[i], color=COLORS[(Object.keys(LAYERS).length)%COLORS.length];
+    document.getElementById('load-msg').textContent='Les: '+layer.name;
+
+    let geomCol=null;
+    try{const gc=db.exec(`SELECT column_name FROM gpkg_geometry_columns WHERE table_name='${layer.table}'`);if(gc[0]&&gc[0].values.length)geomCol=gc[0].values[0][0];}catch(e){}
+    if(!geomCol){try{const ci=db.exec(`PRAGMA table_info("${layer.table}")`);if(ci[0]){const c=ci[0].values.find(c=>/geom|geometry|shape|wkb/i.test(c[1]));if(c)geomCol=c[1];}}catch(e){}}
+    if(!geomCol){dlog(`"${layer.name}": geom dálkur finnst ekki!`,'err');continue;}
+
+    let attrCols=[];
+    try{const ci=db.exec(`PRAGMA table_info("${layer.table}")`);if(ci[0])attrCols=ci[0].values.filter(c=>c[1]!==geomCol&&!/^(fid|ogc_fid)$/i.test(c[1])).map(c=>c[1]);}catch(e){}
+
+    let rows=null;
+    try{const sel=[`"${geomCol}"`,...attrCols.map(c=>`"${c}"`)].join(',');const res=db.exec(`SELECT ${sel} FROM "${layer.table}" LIMIT 10000`);if(res[0])rows=res[0].values;}
+    catch(e){try{const res=db.exec(`SELECT "${geomCol}" FROM "${layer.table}" LIMIT 10000`);if(res[0]){rows=res[0].values;attrCols=[];}}catch(e2){dlog(`Gat ekki sótt "${layer.name}": `+e2.message,'err');continue;}}
+
+    const features=[]; let ok=0,skip=0,fail=0;
+    if(rows){for(const row of rows){const blob=row[0];if(blob===null||blob===undefined){skip++;continue;}try{const geojson=gpkgBlobToGeoJSON(blob);if(!geojson){skip++;continue;}reprojectGeometry(geojson);const attrs={};attrCols.forEach((c,idx)=>attrs[c]=row[idx+1]);features.push({geojson,attrs});ok++;}catch(e){fail++;}}}
+    dlog(`"${layer.name}": ${ok} ✓, ${skip} tóm, ${fail} villa`, ok>0?'ok':'err');
+
+    const group=L.layerGroup().addTo(map);
+    const labelGroup=L.layerGroup();
+    LAYERS[layer.table]={group,labelGroup,color,name:layer.name,table:layer.table,attrCols,features,qmlStyler:null,labelConfig:null,labelFields:[],labelSep:' ',labelsOn:false,qmlName:null,labelExpr:null};
+
+    for(const{geojson,attrs}of features) addFeatureToGroup(geojson,attrs,color,null,group,layer.table);
+    totalFeatures+=features.length;
+  }
+
+  db.close();
+  totalFeatures += Object.values(LAYERS).reduce((s,lo)=>s+lo.features.length,0) - totalFeatures;
+  dlog('Hlaðið úr GPKG: '+layers.map(l=>l.name).join(', '),'ok');
+  // If called standalone (not additive), finalise immediately
+  if (!additive) finalizeLayers();
+}
+
+// ═══ Reprojection ═════════════════════════════════════════════════════════════
+function reprojectGeometry(geom) {
+  if (!toWGS84) return;
+  const rp = c => toWGS84(c[0],c[1]);
+  switch(geom.type) {
+    case 'Point':            geom.coordinates = rp(geom.coordinates); break;
+    case 'MultiPoint':
+    case 'LineString':       geom.coordinates = geom.coordinates.map(rp); break;
+    case 'MultiLineString':
+    case 'Polygon':          geom.coordinates = geom.coordinates.map(r=>r.map(rp)); break;
+    case 'MultiPolygon':     geom.coordinates = geom.coordinates.map(p=>p.map(r=>r.map(rp))); break;
+    case 'GeometryCollection': geom.geometries.forEach(g=>reprojectGeometry(g)); break;
+  }
+}
+
+// ═══ WKB ══════════════════════════════════════════════════════════════════════
+function gpkgBlobToGeoJSON(blob) {
+  const buf=(blob instanceof Uint8Array)?blob:new Uint8Array(blob);
+  if(buf.length<8||buf[0]!==0x47||buf[1]!==0x50) return null;
+  const flags=buf[3],envInd=(flags>>1)&0x07,isEmpty=(flags>>4)&0x01;
+  if(isEmpty) return null;
+  const envBytes=[0,4,6,6,8][envInd<5?envInd:0]*8;
+  const wkbStart=8+envBytes;
+  if(buf.length<=wkbStart+5) return null;
+  const r=readWKB(buf,wkbStart);
+  return r?r.geom:null;
+}
+function readWKB(buf,pos){
+  const dv=new DataView(buf.buffer,buf.byteOffset);
+  if(pos+5>buf.length)return null;
+  const le=dv.getUint8(pos)===1;pos++;
+  const raw=le?dv.getUint32(pos,true):dv.getUint32(pos,false);pos+=4;
+  let bt,hasZ=false,hasM=false;
+  if(raw>=3000&&raw<4000){bt=raw-3000;hasZ=true;hasM=true;}
+  else if(raw>=2000&&raw<3000){bt=raw-2000;hasM=true;}
+  else if(raw>=1000&&raw<2000){bt=raw-1000;hasZ=true;}
+  else if(raw>1000000){bt=raw&0xFFFF;hasZ=!!(raw&0x80000000);hasM=!!(raw&0x40000000);}
+  else{bt=raw;}
+  const ptB=(2+(hasZ?1:0)+(hasM?1:0))*8;
+  const rd=(at)=>le?dv.getFloat64(at,true):dv.getFloat64(at,false);
+  const ru=(at)=>le?dv.getUint32(at,true):dv.getUint32(at,false);
+  const pt=(at)=>[rd(at),rd(at+8)];
+  try{
+    switch(bt){
+      case 1:{const c=pt(pos);return{geom:{type:'Point',coordinates:c},end:pos+ptB};}
+      case 2:{const n=ru(pos);pos+=4;const cs=[];for(let i=0;i<n;i++){cs.push(pt(pos));pos+=ptB;}return{geom:{type:'LineString',coordinates:cs},end:pos};}
+      case 3:{const nr=ru(pos);pos+=4;const rings=[];for(let r=0;r<nr;r++){const n=ru(pos);pos+=4;const ring=[];for(let i=0;i<n;i++){ring.push(pt(pos));pos+=ptB;}rings.push(ring);}return{geom:{type:'Polygon',coordinates:rings},end:pos};}
+      case 4:{const n=ru(pos);pos+=4;const ps=[];for(let i=0;i<n;i++){const s=readWKB(buf,pos);if(!s)break;ps.push(s.geom.coordinates);pos=s.end;}return{geom:{type:'MultiPoint',coordinates:ps},end:pos};}
+      case 5:{const n=ru(pos);pos+=4;const ls=[];for(let i=0;i<n;i++){const s=readWKB(buf,pos);if(!s)break;ls.push(s.geom.coordinates);pos=s.end;}return{geom:{type:'MultiLineString',coordinates:ls},end:pos};}
+      case 6:{const n=ru(pos);pos+=4;const ms=[];for(let i=0;i<n;i++){const s=readWKB(buf,pos);if(!s)break;ms.push(s.geom.coordinates);pos=s.end;}return{geom:{type:'MultiPolygon',coordinates:ms},end:pos};}
+      case 7:{const n=ru(pos);pos+=4;const gs=[];for(let i=0;i<n;i++){const s=readWKB(buf,pos);if(!s)break;gs.push(s.geom);pos=s.end;}return{geom:{type:'GeometryCollection',geometries:gs},end:pos};}
+      default:return null;
+    }
+  }catch(e){return null;}
+}
+
+// ═══ Feature rendering ════════════════════════════════════════════════════════
+// Click accumulator — collects hits from all overlapping polygons within 40ms
+let _clickBuf = [], _clickTimer = null;
+
+function addFeatureToGroup(geojson, attrs, fallbackColor, qmlStyler, group, tableName) {
+  if (!_svgDefs) getSVGDefs();
+  // styleArr is always an array (from symbolToStyle); fallback is single-element array
+  const styleArr = qmlStyler
+    ? qmlStyler(attrs)
+    : [{color:fallbackColor,weight:1.5,opacity:.85,fillColor:fallbackColor,fillOpacity:.25,radius:5,dashArray:null}];
+  const styles = Array.isArray(styleArr) ? styleArr : [styleArr];
+
+  styles.forEach((style, idx) => {
+    const geoLayer = L.geoJSON(
+      {type:'Feature',geometry:geojson,properties:attrs},
+      {
+        style:()=>({
+          color:style.color, weight:style.weight, opacity:style.opacity,
+          fillColor:style.fillColor||'none', fillOpacity:style.fillOpacity||0,
+          dashArray:style.dashArray||null, lineCap:'round', lineJoin:'round'
+        }),
+        pointToLayer:(_,ll)=>L.circleMarker(ll,{
+          radius:style.radius||5, color:style.color, weight:style.weight||1.5,
+          fillColor:style.fillColor||'none', fillOpacity:style.fillOpacity||0, opacity:style.opacity
+        })
+      }
+    );
+    // Attach click only to first (bottom-most) pass to avoid duplicate accumulation
+    if (idx === 0) {
+      geoLayer.on('click', e => {
+        _clickBuf.push({ tableName: tableName || '', attrs });
+        clearTimeout(_clickTimer);
+        _clickTimer = setTimeout(() => { showMultiInfo(_clickBuf); _clickBuf = []; }, 40);
+      });
+    }
+    geoLayer.addTo(group);
+  });
+}
+
+// ═══ Label rendering ══════════════════════════════════════════════════════════
+function rebuildLabels(table) {
+  const lo = LAYERS[table]; if (!lo) return;
+  lo.labelGroup.clearLayers();
+  if (!lo.labelsOn) return;
+  // Check: need either labelExpr or at least one labelField
+  const hasExpr = typeof lo.labelExpr === 'function';
+  if (!hasExpr && (!lo.labelFields || lo.labelFields.length === 0)) return;
+  const cfg = lo.labelConfig || {
+    fontSize:10, color:'#222', bold:true, italic:false,
+    fontFamily:'Calibri', bufferOn:true, bufferSize:2, bufferColor:'rgba(255,255,255,0.85)'
+  };
+  const sep = lo.labelSep !== undefined ? lo.labelSep : ' ';
+  for (const {geojson, attrs} of lo.features) {
+    let text;
+    if (hasExpr) {
+      const result = lo.labelExpr(attrs);
+      if (!result) continue;
+      text = result;
+    } else {
+      const parts = lo.labelFields
+        .map(f => attrs[f])
+        .filter(v => {
+          if (v === null || v === undefined || v === '') return false;
+          if (v === 0 || v === '0' || (typeof v === 'number' && v === 0)) return false;
+          if (typeof v === 'string' && v.trim() !== '' && !isNaN(Number(v)) && Number(v) === 0) return false;
+          return true;
+        });
+      if (!parts.length) continue;
+      text = parts.join(sep);
+    }
+    const coord = geomCentroid(geojson);
+    if (!coord) continue;
+    const latlng = L.latLng(coord[1], coord[0]);
+    buildLabelMarker(text, latlng, cfg).addTo(lo.labelGroup);
+  }
+}
+
+function toggleLabels(table) {
+  const lo = LAYERS[table]; if (!lo) return;
+  lo.labelsOn = !lo.labelsOn;
+  if (lo.labelsOn) {
+    lo.labelGroup.addTo(map);
+    if (lo.labelGroup.getLayers().length === 0) rebuildLabels(table);
+  } else {
+    map.removeLayer(lo.labelGroup);
+  }
+  updateCtrlRow(table);
+}
+
+function toggleLabelField(table, field, checked) {
+  const lo = LAYERS[table]; if (!lo) return;
+  if (checked) {
+    if (!lo.labelFields.includes(field)) lo.labelFields.push(field);
+  } else {
+    lo.labelFields = lo.labelFields.filter(f => f !== field);
+  }
+  lo.labelGroup.clearLayers();
+  if (lo.labelsOn) rebuildLabels(table);
+}
+
+function setLabelSep(table, sep) {
+  const lo = LAYERS[table]; if (!lo) return;
+  lo.labelSep = sep;
+  lo.labelGroup.clearLayers();
+  if (lo.labelsOn) rebuildLabels(table);
+}
+
+// ═══ Redraw ═══════════════════════════════════════════════════════════════════
+function redrawLayer(table) {
+  const lo=LAYERS[table]; if(!lo) return;
+  lo.group.clearLayers();
+  for(const{geojson,attrs}of lo.features)
+    addFeatureToGroup(geojson,attrs,lo.color,lo.qmlStyler,lo.group,lo.table);
+  if(lo.labelsOn) rebuildLabels(table);
+  flushPatterns();  // inject any new hatch patterns
+}
+
+// ═══ QML load ═════════════════════════════════════════════════════════════════
+function openQMLPicker(table){qmlTargetTable=table;document.getElementById('qml-input-global').click();}
+function loadQMLFile(file,table){
+  const r=new FileReader();
+  r.onload=e=>{
+    try{
+      const {styler,labelConfig}=parseQML(e.target.result);
+      const lo=LAYERS[table];
+      lo.qmlStyler=styler;
+      lo.qmlName=file.name;
+      if(labelConfig){
+        lo.labelConfig=labelConfig;
+        if(labelConfig.fieldName){
+          lo.labelFields=[labelConfig.fieldName];
+          dlog(`Label dálkur: "${labelConfig.fieldName}"`, 'ok');
+        }
+      }
+      redrawLayer(table);
+      updateCtrlRow(table);
+    }catch(err){dlog('QML villa: '+err.message,'err');}
+  };
+  r.readAsText(file);
+}
+function clearQML(table){
+  const lo=LAYERS[table];
+  lo.qmlStyler=null;lo.qmlName=null;lo.labelConfig=null;
+  redrawLayer(table);updateCtrlRow(table);
+}
+
+// ═══ Sidebar ══════════════════════════════════════════════════════════════════
+function buildSidebar(layers) {
+  document.getElementById('layer-count').textContent=layers.length;
+  const list=document.getElementById('layer-list');
+  list.innerHTML='';
+  layers.forEach(layer=>{
+    const lo=LAYERS[layer.table];if(!lo)return;
+    const item=document.createElement('div');
+    item.className='layer-item active';item.dataset.table=layer.table;
+    item.innerHTML=`
+      <div class="layer-row">
+        <div class="layer-swatch" data-table="${layer.table}" style="background:${lo.color}"></div>
+        <div class="layer-info">
+          <div class="layer-name">${layer.name||layer.table}</div>
+          <div class="layer-meta">${lo.features.length.toLocaleString()} þ.</div>
+        </div>
+        <button class="layer-toggle on" onclick="toggleLayer(event,'${layer.table}')"></button>
+      </div>
+      <div class="ctrl-row" id="ctrl-row-${layer.table}">
+        <div class="ctrl-row-inner">
+          <button class="ctrl-btn" id="qml-btn-${layer.table}" onclick="openQMLPicker('${layer.table}')">+ QML stíll</button>
+          <span class="ctrl-tag" id="qml-tag-${layer.table}"></span>
+        </div>
+        <div class="ctrl-row-inner" id="label-row-${layer.table}">
+          <button class="ctrl-btn" id="lbl-btn-${layer.table}" onclick="toggleLabels('${layer.table}')">Letur</button>
+          <div class="label-fields" id="lbl-fields-${layer.table}">
+            ${lo.attrCols.map(c=>`
+              <label class="lbl-check">
+                <input type="checkbox" value="${c}" onchange="toggleLabelField('${layer.table}','${c}',this.checked)"> ${c}
+              </label>`).join('')}
+            <label class="lbl-sep-wrap">
+              Bil: <input type="text" class="lbl-sep-input" value=" " maxlength="5"
+                onchange="setLabelSep('${layer.table}',this.value)"
+                oninput="setLabelSep('${layer.table}',this.value)">
+            </label>
+          </div>
+        </div>
+      </div>`;
+    item.querySelector('.layer-row').addEventListener('click',e=>{if(!e.target.classList.contains('layer-toggle'))zoomTo(layer.table);});
+    list.appendChild(item);
+  });
+}
+
+function updateCtrlRow(table) {
+  const lo=LAYERS[table]; if(!lo) return;
+  const qBtn=document.getElementById('qml-btn-'+table);
+  const qTag=document.getElementById('qml-tag-'+table);
+  const sw=document.querySelector(`.layer-swatch[data-table="${table}"]`);
+  // Sidebar may not be built yet (called from autoLoadQMLs before finalizeLayers)
+  if(!qBtn || !qTag) return;
+  if(lo.qmlName){
+    qBtn.textContent='↺ Skipta'; qBtn.classList.add('on');
+    qTag.textContent=lo.qmlName;
+    const ctrlRow=document.getElementById('ctrl-row-'+table);
+    if(ctrlRow && !document.getElementById('qml-clr-'+table)){
+      const clr=document.createElement('button');clr.className='ctrl-clear';clr.id='qml-clr-'+table;clr.textContent='✕';
+      clr.onclick=()=>clearQML(table);
+      ctrlRow.querySelector('.ctrl-row-inner').appendChild(clr);
+    }
+    if(sw) sw.style.background='linear-gradient(135deg,#888 50%,'+lo.color+' 50%)';
+  } else {
+    qBtn.textContent='+ QML stíll'; qBtn.classList.remove('on');
+    qTag.textContent='';
+    const clr=document.getElementById('qml-clr-'+table);if(clr)clr.remove();
+    if(sw) sw.style.background=lo.color;
+  }
+  const lBtn=document.getElementById('lbl-btn-'+table);
+  if(lBtn) lBtn.classList.toggle('on', lo.labelsOn);
+  const fieldsDiv=document.getElementById('lbl-fields-'+table);
+  if(fieldsDiv){
+    fieldsDiv.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+      cb.checked=lo.labelFields.includes(cb.value);
+    });
+    const sepInput=fieldsDiv.querySelector('.lbl-sep-input');
+    if(sepInput) sepInput.value=lo.labelSep!==undefined?lo.labelSep:' ';
+  }
+}
+
+function toggleLayer(e,table){
+  e.stopPropagation();
+  const on=e.target.classList.toggle('on');
+  const item=document.querySelector(`.layer-item[data-table="${table}"]`);
+  if(on){LAYERS[table].group.addTo(map);if(LAYERS[table].labelsOn)LAYERS[table].labelGroup.addTo(map);item&&item.classList.add('active');}
+  else{map.removeLayer(LAYERS[table].group);map.removeLayer(LAYERS[table].labelGroup);item&&item.classList.remove('active');}
+}
+function zoomTo(table){try{const b=LAYERS[table].group.getBounds();if(b.isValid())map.fitBounds(b,{padding:[40,40]});}catch(e){}}
+function fitAll(){let b=null;Object.values(LAYERS).forEach(({group})=>{try{const gb=group.getBounds();if(gb.isValid())b=b?b.extend(gb):gb;}catch(e){}});if(b&&b.isValid())map.fitBounds(b,{padding:[50,50]});}
+function showMultiInfo(hits) {
+  if (!hits || !hits.length) return;
+  // Deduplicate: skip if same table+attrs already in list
+  const seen = new Set();
+  const unique = hits.filter(h => {
+    const key = h.tableName + JSON.stringify(h.attrs);
+    if (seen.has(key)) return false;
+    seen.add(key); return true;
+  });
+  let html = '';
+  unique.forEach((h, i) => {
+    const lo = LAYERS[h.tableName];
+    const layerName = lo ? (lo.name || h.tableName) : h.tableName;
+    const entries = Object.entries(h.attrs).filter(([,v]) => v !== null && v !== undefined && v !== '');
+    if (!entries.length) return;
+    if (unique.length > 1) {
+      html += `<div style="font-family:'Calibri','Trebuchet MS',sans-serif;font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin:${i>0?'10px':0} 0 4px;padding-top:${i>0?'8px':'0'};border-top:${i>0?'1px solid var(--border2)':'none'}">${layerName}</div>`;
+    }
+    html += entries.map(([k,v]) =>
+      `<div class="info-row"><span class="info-key">${k}</span><span class="info-val">${v}</span></div>`
+    ).join('');
+  });
+  if (!html) return;
+  document.getElementById('info-content').innerHTML = html;
+  document.getElementById('info-panel').classList.add('visible');
+}
+function showInfo(attrs){ showMultiInfo([{tableName:'',attrs}]); }
+function closeInfo(){document.getElementById('info-panel').classList.remove('visible');}
+</script>
+</body>
+</html>
